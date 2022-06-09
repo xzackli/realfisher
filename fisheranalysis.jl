@@ -228,6 +228,11 @@ Now, let's perform a Fisher analysis of these likelihoods. Here are the paramete
 # ╔═╡ 0dde6b0e-fd79-4784-9403-f0a657e830b7
 pars
 
+# ╔═╡ aaadd7a7-6c78-4858-a90a-745efa778737
+md"""
+Now we will present the error bars on each parameter, with the last parameter being the error on the dark matter-baryon scattering cross section. In this case, we are using a 1 GeV, $n=0$ scattering model.
+"""
+
 # ╔═╡ 9f31c89e-3a24-43c5-aa38-6dea044d1ec1
 md"""
 #### Planck only:
@@ -265,6 +270,11 @@ begin
 	fishAP[5,5] += 1 / (0.015)^2  # tau prior to replace lowP
 	sqrt.(diag(inv(fishAP)))
 end
+
+# ╔═╡ 48176533-1308-4e0c-8bb2-108c81edb996
+md"""
+Sadly, the last parameter is $\sigma_p$, the dark matter-baryon scattering cross section. It improves from $2.04 \times 10^{-25}$ cm$^2$ to $1.53 \times 10^{-25}$ cm$^2$, only a factor of 33%. That also implies that much of the improvement we see in the constraint is due to a statistical fluctuation between Planck and ACT.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -636,11 +646,13 @@ version = "17.4.0+0"
 # ╠═5ee55741-2464-4a03-b357-c1fe00136dbf
 # ╟─ecdc1673-a65a-4f5c-b820-c21794262468
 # ╠═0dde6b0e-fd79-4784-9403-f0a657e830b7
+# ╟─aaadd7a7-6c78-4858-a90a-745efa778737
 # ╟─9f31c89e-3a24-43c5-aa38-6dea044d1ec1
 # ╠═3d51a515-084a-443e-913a-299495b39eed
 # ╟─72abf005-1200-4afe-b654-84f2abfc3f45
 # ╠═14c66b90-7a4d-48c2-bf10-2e3b7fc144d2
 # ╟─464034b6-b75f-4128-8cf8-3fd2d590a75f
 # ╠═917cb116-4ff8-4707-b405-6ff12dccd54d
+# ╟─48176533-1308-4e0c-8bb2-108c81edb996
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
