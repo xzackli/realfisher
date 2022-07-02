@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.8
+# v0.19.9
 
 using Markdown
 using InteractiveUtils
@@ -25,7 +25,7 @@ I directly implement two likelihoods below,
 1. DR4 **pyactlike**, containing deep and wide patches
 2. Heather Prince's MOPED compressed Planck 2018 likelihood. 
 
-They're both Gaussian likelihoods, and I have tested that they match the originals to machine-precision. Next, I compute the **Hessian** of the likelihood numerically using forward-mode automatic differentiation. 
+They're both Gaussian likelihoods, and I have tested that they match the originals to machine-precision. Next, I compute the negative **Hessian** of the log-likelihood ``\mathcal{L}`` numerically using forward-mode automatic differentiation. 
 
 ```math
 F_{ij} = - \frac{ \partial^2 \mathcal{L}}{\partial \theta_i \, \partial \theta_j}
@@ -152,6 +152,8 @@ Note that this analysis was entirely possible without automatic differentiation,
 
 # ╔═╡ 8afd3e00-748f-426a-b884-4fc6a9ee35b0
 begin
+	n = 0 # MODEL INDEX
+	
 	const T_CMB = 2.7255
 	LCDM_pars = (
 		# A_s=2.1824274E-09, 
@@ -177,7 +179,11 @@ begin
 	cl_dict = Dict{String, Vector{Float64}}()
 
 	for k in cl_keys
-		cl0 = first(np.load("pyactlike_data/cl_$(k).npy", allow_pickle=true))
+		parname = k
+		if parname == "sigma_dmeff"
+			parname = parname * "_n$(n)"
+		end
+		cl0 = first(np.load("pyactlike_data/cl_$(parname).npy", allow_pickle=true))
 		for xy in ("tt", "te", "ee")
 			cl_dict["$(k)_$(xy)"] = cl0.get(xy) * (T_CMB * 1e6)^2
 		end
@@ -271,9 +277,36 @@ begin
 	sqrt.(diag(inv(fishAP)))
 end
 
+# ╔═╡ 669d323d-636b-4c47-baff-70010ce1803d
+md"""
+For parameter $\theta_i$, we can now compute the marginalized error $\sigma$, 
+```math
+    \sigma(\theta_i) = \sqrt{C_{ii}}.
+```
+Similarly, we can define an overall Figure of Merit (FoM) that describes the full extension model,
+```math
+    FoM = 1 / \sqrt{\det F}.
+```
+Then we can find the ratios of these quantities for *Planck* alone relative to ACT and *Planck* combined.
+"""
+
+# ╔═╡ 29278c30-de25-4b65-a46d-da957c55e790
+md"""
+``\sigma^P / \sigma^{AP}``:"""
+
+# ╔═╡ ea91cc48-638c-4503-8a1d-c4e9477a4ae8
+sqrt.(diag(inv(fishP)))[end] / sqrt.(diag(inv(fishAP)))[end]
+
+# ╔═╡ 0b1bc9df-d358-42e0-87a5-c4816cbc83c1
+md"""
+``FoM^P / FoM^{AP}``:"""
+
+# ╔═╡ c8e2df36-2088-4327-9e6c-981e42c857ee
+(1 / sqrt(det(fishP))) / (1 / sqrt(det(fishAP)))
+
 # ╔═╡ 48176533-1308-4e0c-8bb2-108c81edb996
 md"""
-Sadly, the last parameter is $\sigma_p$, the dark matter-baryon scattering cross section. It improves from $2.04 \times 10^{-25}$ cm$^2$ to $1.53 \times 10^{-25}$ cm$^2$, only a factor of 33%. That also implies that much of the improvement we see in the constraint is due to a statistical fluctuation between Planck and ACT.
+The last parameter in the vector is $\sigma_p$, the dark matter-baryon scattering cross section. It improves from $2.04 \times 10^{-25}$ cm$^2$ to $1.53 \times 10^{-25}$ cm$^2$, only a factor of 33%. That also implies that much of the improvement we see in the constraint is due to a statistical fluctuation between Planck and ACT.
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -294,13 +327,11 @@ PyPlot = "~2.10.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.0-rc1"
+julia_version = "1.7.2"
 manifest_format = "2.0"
-project_hash = "61d1f052e6ce6500139ab07712fd3bb6738471c8"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
-version = "1.1.1"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -322,9 +353,9 @@ version = "0.1.3"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
-git-tree-sha1 = "0f4e115f6f34bbe43c19751c90a38b2f380637b9"
+git-tree-sha1 = "eb7f0f8307f71fac7c606984ea5fb2817275d6e4"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
-version = "0.11.3"
+version = "0.11.4"
 
 [[deps.Colors]]
 deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
@@ -347,7 +378,6 @@ version = "4.1.0"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "0.5.2+0"
 
 [[deps.Conda]]
 deps = ["Downloads", "JSON", "VersionParsing"]
@@ -378,12 +408,8 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.8.6"
 
 [[deps.Downloads]]
-deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
+deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-version = "1.6.0"
-
-[[deps.FileWatching]]
-uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -432,12 +458,10 @@ version = "1.3.0"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "7.81.0+0"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -446,7 +470,6 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -477,14 +500,12 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.0+0"
 
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2022.2.1"
 
 [[deps.NaNMath]]
 git-tree-sha1 = "737a5957f387b17e74d4ad2f440eb330b39a62c5"
@@ -493,17 +514,14 @@ version = "1.0.0"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
-version = "1.2.0"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.20+0"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+0"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
@@ -513,14 +531,13 @@ version = "0.5.5+0"
 
 [[deps.Parsers]]
 deps = ["Dates"]
-git-tree-sha1 = "1285416549ccfcdf0c50d4997a94331e88d68413"
+git-tree-sha1 = "0044b23da09b5608b4ecacb4e5e6c6332f833a7e"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.3.1"
+version = "2.3.2"
 
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.8.0"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -559,7 +576,6 @@ version = "1.2.2"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
-version = "0.7.0"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -578,10 +594,15 @@ uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.1.6"
 
 [[deps.StaticArrays]]
-deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "383a578bdf6e6721f480e749d503ebc8405a0b22"
+deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
+git-tree-sha1 = "9f8a5dc5944dc7fbbe6eb4180660935653b0a9d9"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.4.6"
+version = "1.5.0"
+
+[[deps.StaticArraysCore]]
+git-tree-sha1 = "66fe9eb253f910fe8cf161953880cfdaef01cdf0"
+uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+version = "1.0.1"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -590,12 +611,10 @@ uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
-version = "1.0.0"
 
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
-version = "1.10.0"
 
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
@@ -616,22 +635,18 @@ version = "1.3.0"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.12+3"
 
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.1.0+0"
 
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.41.0+1"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
@@ -653,6 +668,11 @@ version = "17.4.0+0"
 # ╠═14c66b90-7a4d-48c2-bf10-2e3b7fc144d2
 # ╟─464034b6-b75f-4128-8cf8-3fd2d590a75f
 # ╠═917cb116-4ff8-4707-b405-6ff12dccd54d
+# ╟─669d323d-636b-4c47-baff-70010ce1803d
+# ╟─29278c30-de25-4b65-a46d-da957c55e790
+# ╠═ea91cc48-638c-4503-8a1d-c4e9477a4ae8
+# ╟─0b1bc9df-d358-42e0-87a5-c4816cbc83c1
+# ╠═c8e2df36-2088-4327-9e6c-981e42c857ee
 # ╟─48176533-1308-4e0c-8bb2-108c81edb996
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
