@@ -19,7 +19,7 @@ using ForwardDiff, LinearAlgebra
 md"""
 # Exact Fisher Analysis with Automatic Differentiation
 
-This notebook tests the statistical power of ACT vs ACT+Planck, in the configurations reported by Aiola et al. 2020. I do this in a nice simple numerical way with automatic differentiation.
+This notebook tests the statistical power of ACT vs ACT+Planck, in the configurations reported by Aiola et al. 2020. I do this in a nice simple numerical way with automatic differentiation. The data products are available on [GitHub](https://github.com/xzackli/realfisher).
 
 I directly implement two likelihoods below,
 1. DR4 **pyactlike**, containing deep and wide patches
